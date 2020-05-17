@@ -1,0 +1,9 @@
+[0m[[0m[0mdebug[0m] [0m[0mPackaging /home/wu/projects/spark-scala-kaggles/target/scala-2.11/spark-scala-kaggles_2.11-0.1.jar ...[0m
+[0m[[0m[0mdebug[0m] [0m[0mInput file mappings:[0m
+[0m[[0m[0mdebug[0m] [0m[0m	titanic[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/wu/projects/spark-scala-kaggles/target/scala-2.11/classes/titanic[0m
+[0m[[0m[0mdebug[0m] [0m[0m	titanic/LogisticRegression.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/wu/projects/spark-scala-kaggles/target/scala-2.11/classes/titanic/LogisticRegression.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	titanic/LogisticRegression$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/wu/projects/spark-scala-kaggles/target/scala-2.11/classes/titanic/LogisticRegression$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0mDone packaging.[0m

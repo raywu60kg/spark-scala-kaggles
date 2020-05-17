@@ -1,0 +1,1 @@
+["sbt.Task[scala.collection.immutable.Map[java.lang.String, scala.collection.Seq[scala.Tuple2[java.nio.file.Path, sbt.nio.FileStamp]]]]",{"2.11.6":{"hashes":[["/home/wu/projects/spark-scala-kaggles/src/main/scala/titanic/LogisticRegression.scala","79fa4c13b193b956c3f8a3a2fe255fc417f40ae7"]],"lastModifiedTimes":[]}}]
