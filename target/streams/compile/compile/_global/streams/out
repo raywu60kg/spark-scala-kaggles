@@ -1,2 +1,9 @@
-[0m[[0m[0mdebug[0m] [0m[0mAcquiring lock on file /home/wu/projects/spark-scala-kaggles/project/target/.sbt-compilation-infos/spark-scala-kaggles-compile/.sbt-idea-lock ...[0m
-[0m[[0m[0mdebug[0m] [0m[0mReleasing lock on file /home/wu/projects/spark-scala-kaggles/project/target/.sbt-compilation-infos/spark-scala-kaggles-compile/.sbt-idea-lock.[0m
+[0m[[0m[31merror[0m] [0m[0m/home/wu/projects/spark-scala-kaggles/src/main/scala/titanic/LogisticRegression.scala:66:22: not enough arguments for method train: (data: org.apache.spark.sql.DataFrame)Unit.[0m
+[0m[[0m[31merror[0m] [0m[0mUnspecified value parameter data.[0m
+[0m[[0m[31merror[0m] [0m[0m    val model = train()[0m
+[0m[[0m[31merror[0m] [0m[0m                     ^[0m
+[0m[[0m[33mwarn[0m] [0m[0m/home/wu/projects/spark-scala-kaggles/src/main/scala/titanic/LogisticRegression.scala:89:40: a pure expression does nothing in statement position; you may be omitting necessary parentheses[0m
+[0m[[0m[33mwarn[0m] [0m[0m  def train(data: DataFrame): Unit = { 1 }[0m
+[0m[[0m[33mwarn[0m] [0m[0m                                       ^[0m
+[0m[[0m[33mwarn[0m] [0m[0mone warning found[0m
+[0m[[0m[31merror[0m] [0m[0mone error found[0m
