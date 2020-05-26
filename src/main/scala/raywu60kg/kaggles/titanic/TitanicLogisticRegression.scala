@@ -12,6 +12,10 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.ml.feature.OneHotEncoder
+import org.apache.spark.sql.functions._
+import org.apache.spark.ml.feature.OneHotEncoderEstimator
+import org.apache.spark.ml.feature.StringIndexer
+import org.apache.spark.ml.Pipeline
 
 object TitanicLogisticRegression {
   private val trainSchema = StructType(
@@ -67,7 +71,7 @@ object TitanicLogisticRegression {
       spark: SparkSession,
       fileDir: String,
       scheme: StructType
-  ): DataFrame = {
+  ): (DataFrame) = {
 
     val df = spark.read
       .format("csv")
@@ -78,13 +82,55 @@ object TitanicLogisticRegression {
 
   }
 
-  // def parseData(data: DataFrame): DataFrame = {
-  //   data = data.select("")
-  //   val encoder = new OneHotEncoder()
-  //     .setInputCol("")
-  //     .setOutputCol()
-  //   data
-  // }
+  def parseData(
+      spark: SparkSession,
+      trainData: DataFrame,
+      testData: DataFrame
+  ): (DataFrame, DataFrame) = {
+    var parsedTrainData = trainData
+    var parsedTestData = testData
+    val dropFeatures = List("PassengerId", "Name", "Ticket", "Cabin")
+    val oneHotEncodeFeatures = Array("Pclass", "Sex", "Embarked")
+    val averageAge =
+      parsedTrainData.select(mean(parsedTrainData("Age"))).first().getDouble(0)
+
+    // drop unuse columns
+    for (feature <- dropFeatures) {
+      parsedTrainData = parsedTrainData.drop(feature)
+      parsedTestData = parsedTestData.drop(feature)
+    }
+    // fill null value
+    parsedTrainData = parsedTrainData.na.fill(averageAge, Array("Age"))
+    parsedTestData = parsedTestData.na.fill(averageAge, Array("Age"))
+
+    // one hot encoder
+    val indexers = oneHotEncodeFeatures.map(c =>
+      new StringIndexer().setInputCol(c).setOutputCol(c + "_idx")
+    )
+    val encoders = oneHotEncodeFeatures.map(c =>
+      new OneHotEncoderEstimator()
+        .setInputCols(Array(c + "_idx"))
+        .setOutputCols(Array(c + "_vec"))
+    )
+    val pipeline = new Pipeline().setStages(indexers ++ encoders)
+    var transformedTrainData = pipeline
+      .fit(parsedTrainData)
+      .transform(parsedTrainData)
+    var transformedTestData = pipeline
+      .fit(parsedTrainData)
+      .transform(parsedTestData)
+    
+    // cleanup features
+    for (feature <- oneHotEncodeFeatures) {
+      transformedTrainData = transformedTrainData.drop(feature)
+      transformedTrainData = transformedTrainData.drop(feature + "_idx")
+
+      transformedTestData = transformedTestData.drop(feature)
+      transformedTestData = transformedTestData.drop(feature + "_idx")
+    }
+
+    (transformedTrainData, transformedTestData)
+  }
 
   // def train(data: DataFrame): Unit = { 1 }
 }

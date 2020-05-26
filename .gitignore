@@ -8,6 +8,7 @@
 dist/*
 target/
 project/target/
+project/target/*
 lib_managed/
 src_managed/
 project/boot/
@@ -25,7 +26,7 @@ project/plugins/project/
 .ensime
 
 .metals/
-metals.sbt
+# metals.sbt
 metals/project/
 
 .vscode/
