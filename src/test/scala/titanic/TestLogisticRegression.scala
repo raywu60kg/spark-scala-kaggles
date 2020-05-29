@@ -11,6 +11,9 @@ import org.apache.spark.ml.feature.OneHotEncoderEstimator
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.ml.tuning.ParamGridBuilder
+import org.apache.spark.ml.tuning.CrossValidator
+import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
 
 class TestLogisticRegression extends FunSuite {
   val spark = SparkSession.builder
@@ -175,6 +178,9 @@ class TestLogisticRegression extends FunSuite {
   //   )
   //   spark.stop()
   // }
+  test("Train test split") {
+
+  }
   test("Test Lr") {
     // Load training data
     val spark = SparkSession.builder
@@ -199,16 +205,24 @@ class TestLogisticRegression extends FunSuite {
       testData = testData
     )
 
-    parsedTrainData.show()
     val lr = new LogisticRegression()
-      .setMaxIter(10)
-      .setRegParam(0.3)
-      .setElasticNetParam(0.8)
+    val paramGrid = new ParamGridBuilder()
+      .addGrid(lr.regParam, Array(0.1, 0.01))
+      .build()
 
-    val lrModel = lr.fit(parsedTrainData)
+    val cv = new CrossValidator()
+      .setEstimator(lr)
+      .setEvaluator(new BinaryClassificationEvaluator)
+      .setEstimatorParamMaps(paramGrid)
+      .setNumFolds(3)
+
+    
+
+    val cvModel = cv.fit(parsedTrainData)
 
     // Print the coefficients and intercept for logistic regression
-    println(s"Coefficients: ${lrModel.coefficients} Intercept: ${lrModel.intercept}")
+    println("@@@@", cvModel.getEvaluator)
+    
     spark.stop()
   }
 
