@@ -16,6 +16,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.ml.feature.OneHotEncoderEstimator
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.feature.VectorAssembler
 
 object TitanicLogisticRegression {
   private val trainSchema = StructType(
@@ -91,6 +92,7 @@ object TitanicLogisticRegression {
     var parsedTestData = testData
     val dropFeatures = List("PassengerId", "Name", "Ticket", "Cabin")
     val oneHotEncodeFeatures = Array("Pclass", "Sex", "Embarked")
+    val featuresName = Array("Age", "SibSP", "Parch", "Fare", "Pclass_vec", "Sex_vec", "Embarked_vec")
     val averageAge =
       parsedTrainData.select(mean(parsedTrainData("Age"))).first().getDouble(0)
 
@@ -105,14 +107,18 @@ object TitanicLogisticRegression {
 
     // one hot encoder
     val indexers = oneHotEncodeFeatures.map(c =>
-      new StringIndexer().setInputCol(c).setOutputCol(c + "_idx")
+      new StringIndexer().setHandleInvalid("skip").setInputCol(c).setOutputCol(c + "_idx")
     )
     val encoders = oneHotEncodeFeatures.map(c =>
       new OneHotEncoderEstimator()
         .setInputCols(Array(c + "_idx"))
         .setOutputCols(Array(c + "_vec"))
     )
-    val pipeline = new Pipeline().setStages(indexers ++ encoders)
+    val assembler = new VectorAssembler()
+      .setInputCols(featuresName)
+      .setOutputCol("features")
+    
+    val pipeline = new Pipeline().setStages(indexers ++ encoders ++ Array(assembler))
     var transformedTrainData = pipeline
       .fit(parsedTrainData)
       .transform(parsedTrainData)
@@ -121,16 +127,28 @@ object TitanicLogisticRegression {
       .transform(parsedTestData)
     
     // cleanup features
-    for (feature <- oneHotEncodeFeatures) {
-      transformedTrainData = transformedTrainData.drop(feature)
-      transformedTrainData = transformedTrainData.drop(feature + "_idx")
+    // for (feature <- oneHotEncodeFeatures) {
+    //   transformedTrainData = transformedTrainData.drop(feature)
+    //   transformedTrainData = transformedTrainData.drop(feature + "_idx")
 
-      transformedTestData = transformedTestData.drop(feature)
-      transformedTestData = transformedTestData.drop(feature + "_idx")
-    }
+    //   transformedTestData = transformedTestData.drop(feature)
+    //   transformedTestData = transformedTestData.drop(feature + "_idx")
+    // }
+    
+    
+    transformedTrainData = transformedTrainData.select(col("Survived").as("label"), col("features"))
+    transformedTestData = transformedTestData.select("features")
+    
+    // rename label
+    // transformedTrainData.withColumn("Survived", col("label")).
 
     (transformedTrainData, transformedTestData)
   }
 
-  // def train(data: DataFrame): Unit = { 1 }
+  // def train(trainData: DataFrame, testData: DataFrame): Unit = {
+  //   val lr = new LogisticRegressionModel()
+  //     .setMaxIter(10)
+  //     .setRegParam()
+  //     .setElasticNetParam(0.8)
+  // }
 }

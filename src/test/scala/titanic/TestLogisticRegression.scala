@@ -10,58 +10,63 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.ml.feature.OneHotEncoderEstimator
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.classification.LogisticRegression
 
 class TestLogisticRegression extends FunSuite {
-  test("Test load data") {
-    val spark = SparkSession.builder
+  val spark = SparkSession.builder
       .appName("Test-Titanic-Logistic-Regression")
       .master("local[*]")
       .getOrCreate()
-    val trainSchema = StructType(
-      Array(
-        StructField("PassengerId", LongType, true),
-        StructField("Survived", LongType, true),
-        StructField("Pclass", StringType, true),
-        StructField("Name", StringType, true),
-        StructField("Sex", StringType, true),
-        StructField("Age", FloatType, true),
-        StructField("SibSP", LongType, true),
-        StructField("Parch", LongType, true),
-        StructField("Ticket", StringType, true),
-        StructField("Fare", FloatType, true),
-        StructField("Cabin", StringType, true),
-        StructField("Embarked", StringType, true)
-      )
+  val trainSchema = StructType(
+    Array(
+      StructField("PassengerId", LongType, true),
+      StructField("Survived", LongType, true),
+      StructField("Pclass", StringType, true),
+      StructField("Name", StringType, true),
+      StructField("Sex", StringType, true),
+      StructField("Age", FloatType, true),
+      StructField("SibSP", LongType, true),
+      StructField("Parch", LongType, true),
+      StructField("Ticket", StringType, true),
+      StructField("Fare", FloatType, true),
+      StructField("Cabin", StringType, true),
+      StructField("Embarked", StringType, true)
     )
-    val testSchema = StructType(
-      Array(
-        StructField("PassengerId", LongType, true),
-        StructField("Pclass", StringType, true),
-        StructField("Name", StringType, true),
-        StructField("Sex", StringType, true),
-        StructField("Age", FloatType, true),
-        StructField("SibSP", LongType, true),
-        StructField("Parch", LongType, true),
-        StructField("Ticket", StringType, true),
-        StructField("Fare", FloatType, true),
-        StructField("Cabin", StringType, true),
-        StructField("Embarked", StringType, true)
-      )
+  )
+  val testSchema = StructType(
+    Array(
+      StructField("PassengerId", LongType, true),
+      StructField("Pclass", StringType, true),
+      StructField("Name", StringType, true),
+      StructField("Sex", StringType, true),
+      StructField("Age", FloatType, true),
+      StructField("SibSP", LongType, true),
+      StructField("Parch", LongType, true),
+      StructField("Ticket", StringType, true),
+      StructField("Fare", FloatType, true),
+      StructField("Cabin", StringType, true),
+      StructField("Embarked", StringType, true)
     )
-    val trainData = TitanicLogisticRegression.loadData(
-      spark = spark,
-      fileDir = "data/titanic/train.csv",
-      scheme = trainSchema
-    )
-    val testData = TitanicLogisticRegression.loadData(
-      spark = spark,
-      fileDir = "data/titanic/test.csv",
-      scheme = testSchema
-    )
-    assert(trainData.count() == 891)
-    assert(testData.count() == 418)
-    spark.stop()
-  }
+  )
+  // test("Test load data") {
+  //   val spark = SparkSession.builder
+  //     .appName("Test-Titanic-Logistic-Regression")
+  //     .master("local[*]")
+  //     .getOrCreate()
+  //   val trainData = TitanicLogisticRegression.loadData(
+  //     spark = spark,
+  //     fileDir = "data/titanic/train.csv",
+  //     scheme = trainSchema
+  //   )
+  //   val testData = TitanicLogisticRegression.loadData(
+  //     spark = spark,
+  //     fileDir = "data/titanic/test.csv",
+  //     scheme = testSchema
+  //   )
+  //   assert(trainData.count() == 891)
+  //   assert(testData.count() == 418)
+  //   spark.stop()
+  // }
   // test("Test one hot encoder") {
   //   val spark = SparkSession.builder
   //     .appName("Test-Titanic-Logistic-Regression")
@@ -129,42 +134,54 @@ class TestLogisticRegression extends FunSuite {
   //   assert(1 == 2)
   // }
 
-  test("Test parseData") {
+  // test("Test parseData") {
+  //   val spark = SparkSession.builder
+  //     .appName("Test-Titanic-Logistic-Regression")
+  //     .master("local[*]")
+  //     .getOrCreate()
+  //   val trainData = TitanicLogisticRegression.loadData(
+  //     spark = spark,
+  //     fileDir = "data/titanic/train.csv",
+  //     scheme = trainSchema
+  //   )
+  //   val testData = TitanicLogisticRegression.loadData(
+  //     spark = spark,
+  //     fileDir = "data/titanic/test.csv",
+  //     scheme = testSchema
+  //   )
+
+  //   val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
+  //     spark = spark,
+  //     trainData = trainData,
+  //     testData = testData
+  //   )
+  //   parsedTrainData.show()
+  //   parsedTestData.show()
+
+  //   val trainColumns = parsedTrainData.columns.toSeq
+  //   val testColumns = parsedTestData.columns.toSeq
+  //   spark.stop()
+  //   println("@@@@@", trainColumns, testColumns)
+  //   assert(
+  //     trainColumns == Array(
+  //       "label",
+  //       "features"
+  //     ).toSeq
+  //   )
+  //   assert(
+  //     testColumns == Array(
+  //       "features"
+  //     ).toSeq
+  //   )
+  //   spark.stop()
+  // }
+  test("Test Lr") {
+    // Load training data
     val spark = SparkSession.builder
       .appName("Test-Titanic-Logistic-Regression")
       .master("local[*]")
       .getOrCreate()
-    val trainSchema = StructType(
-      Array(
-        StructField("PassengerId", LongType, true),
-        StructField("Survived", LongType, true),
-        StructField("Pclass", StringType, true),
-        StructField("Name", StringType, true),
-        StructField("Sex", StringType, true),
-        StructField("Age", FloatType, true),
-        StructField("SibSP", LongType, true),
-        StructField("Parch", LongType, true),
-        StructField("Ticket", StringType, true),
-        StructField("Fare", FloatType, true),
-        StructField("Cabin", StringType, true),
-        StructField("Embarked", StringType, true)
-      )
-    )
-    val testSchema = StructType(
-      Array(
-        StructField("PassengerId", LongType, true),
-        StructField("Pclass", StringType, true),
-        StructField("Name", StringType, true),
-        StructField("Sex", StringType, true),
-        StructField("Age", FloatType, true),
-        StructField("SibSP", LongType, true),
-        StructField("Parch", LongType, true),
-        StructField("Ticket", StringType, true),
-        StructField("Fare", FloatType, true),
-        StructField("Cabin", StringType, true),
-        StructField("Embarked", StringType, true)
-      )
-    )
+
     val trainData = TitanicLogisticRegression.loadData(
       spark = spark,
       fileDir = "data/titanic/train.csv",
@@ -181,35 +198,18 @@ class TestLogisticRegression extends FunSuite {
       trainData = trainData,
       testData = testData
     )
-    parsedTrainData.show()
-    parsedTestData.show()
 
-    val trainColumns = parsedTrainData.columns.toSeq
-    val testColumns = parsedTestData.columns.toSeq
+    parsedTrainData.show()
+    val lr = new LogisticRegression()
+      .setMaxIter(10)
+      .setRegParam(0.3)
+      .setElasticNetParam(0.8)
+
+    val lrModel = lr.fit(parsedTrainData)
+
+    // Print the coefficients and intercept for logistic regression
+    println(s"Coefficients: ${lrModel.coefficients} Intercept: ${lrModel.intercept}")
     spark.stop()
-    println("@@@@@", trainColumns, testColumns)
-    assert(
-      trainColumns == Array(
-        "Survived",
-        "Age",
-        "SibSP",
-        "Parch",
-        "Fare",
-        "Pclass_vec",
-        "Sex_vec",
-        "Embarked_vec"
-      ).toSeq
-    )
-    assert(
-      testColumns == Array(
-        "Age",
-        "SibSP",
-        "Parch",
-        "Fare",
-        "Pclass_vec",
-        "Sex_vec",
-        "Embarked_vec"
-      ).toSeq
-    )
   }
+
 }
