@@ -17,6 +17,11 @@ import org.apache.spark.ml.feature.OneHotEncoderEstimator
 import org.apache.spark.ml.feature.StringIndexer
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.ml.tuning.ParamGridBuilder
+import org.apache.spark.ml.tuning.CrossValidator
+import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
+import org.apache.spark.ml.Model
 
 object TitanicLogisticRegression {
   private val trainSchema = StructType(
@@ -56,7 +61,7 @@ object TitanicLogisticRegression {
       .appName("Titanic-Logistic-Regression")
       .master("local[*]")
       .getOrCreate()
-
+    import spark.implicits._
     val trainDataDir = args(0)
     val testDataDir = args(1)
     val trainData =
@@ -92,7 +97,15 @@ object TitanicLogisticRegression {
     var parsedTestData = testData
     val dropFeatures = List("PassengerId", "Name", "Ticket", "Cabin")
     val oneHotEncodeFeatures = Array("Pclass", "Sex", "Embarked")
-    val featuresName = Array("Age", "SibSP", "Parch", "Fare", "Pclass_vec", "Sex_vec", "Embarked_vec")
+    val featuresName = Array(
+      "Age",
+      "SibSP",
+      "Parch",
+      "Fare",
+      "Pclass_vec",
+      "Sex_vec",
+      "Embarked_vec"
+    )
     val averageAge =
       parsedTrainData.select(mean(parsedTrainData("Age"))).first().getDouble(0)
 
@@ -107,7 +120,10 @@ object TitanicLogisticRegression {
 
     // one hot encoder
     val indexers = oneHotEncodeFeatures.map(c =>
-      new StringIndexer().setHandleInvalid("skip").setInputCol(c).setOutputCol(c + "_idx")
+      new StringIndexer()
+        .setHandleInvalid("skip")
+        .setInputCol(c)
+        .setOutputCol(c + "_idx")
     )
     val encoders = oneHotEncodeFeatures.map(c =>
       new OneHotEncoderEstimator()
@@ -117,15 +133,16 @@ object TitanicLogisticRegression {
     val assembler = new VectorAssembler()
       .setInputCols(featuresName)
       .setOutputCol("features")
-    
-    val pipeline = new Pipeline().setStages(indexers ++ encoders ++ Array(assembler))
+
+    val pipeline =
+      new Pipeline().setStages(indexers ++ encoders ++ Array(assembler))
     var transformedTrainData = pipeline
       .fit(parsedTrainData)
       .transform(parsedTrainData)
     var transformedTestData = pipeline
       .fit(parsedTrainData)
       .transform(parsedTestData)
-    
+
     // cleanup features
     // for (feature <- oneHotEncodeFeatures) {
     //   transformedTrainData = transformedTrainData.drop(feature)
@@ -134,21 +151,54 @@ object TitanicLogisticRegression {
     //   transformedTestData = transformedTestData.drop(feature)
     //   transformedTestData = transformedTestData.drop(feature + "_idx")
     // }
-    
-    
-    transformedTrainData = transformedTrainData.select(col("Survived").as("label"), col("features"))
+
+    transformedTrainData =
+      transformedTrainData.select(col("Survived").as("label"), col("features"))
     transformedTestData = transformedTestData.select("features")
-    
+
     // rename label
     // transformedTrainData.withColumn("Survived", col("label")).
 
     (transformedTrainData, transformedTestData)
   }
 
-  // def train(trainData: DataFrame, testData: DataFrame): Unit = {
-  //   val lr = new LogisticRegressionModel()
-  //     .setMaxIter(10)
-  //     .setRegParam()
-  //     .setElasticNetParam(0.8)
-  // }
+  def trainAndPredict(
+      spark: SparkSession,
+      trainData: DataFrame,
+      testData: DataFrame
+  ): DataFrame = {
+    val lr = new LogisticRegression()
+    val paramGrid = new ParamGridBuilder()
+      .addGrid(lr.regParam, Array(0.1, 0.01))
+      // .addGrid(lr.elasticNetParam, Array(0.8, 0.7, 0.6, 0.5))
+      .build()
+
+    val cv = new CrossValidator()
+      .setEstimator(lr)
+      .setEvaluator(
+        new BinaryClassificationEvaluator().setMetricName("areaUnderPR")
+      )
+      .setEstimatorParamMaps(paramGrid)
+      .setNumFolds(3)
+
+    val cvModel = cv.fit(trainData)
+    cvModel.transform(testData)
+  }
+
+  def write2CSV(
+      spark: SparkSession,
+      prediction: DataFrame,
+      testData: DataFrame,
+      outputDir: String
+  ): DataFrame = {
+    val tmp = testData.withColumn(
+      "Survived",
+      prediction.select("prediction").rdd.flatMap(_).collect()
+    )
+    // newData.write
+    //   .option("header", "True")
+    //   .mode("overwrite")
+    //   .save(outputFileName)
+    tmp
+  }
 }

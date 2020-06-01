@@ -14,12 +14,13 @@ import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.tuning.ParamGridBuilder
 import org.apache.spark.ml.tuning.CrossValidator
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator
+import scala.math.max
 
 class TestLogisticRegression extends FunSuite {
   val spark = SparkSession.builder
-      .appName("Test-Titanic-Logistic-Regression")
-      .master("local[*]")
-      .getOrCreate()
+    .appName("Test-Titanic-Logistic-Regression")
+    .master("local[*]")
+    .getOrCreate()
   val trainSchema = StructType(
     Array(
       StructField("PassengerId", LongType, true),
@@ -178,10 +179,91 @@ class TestLogisticRegression extends FunSuite {
   //   )
   //   spark.stop()
   // }
-  test("Train test split") {
+  // test("Test Lr") {
+  //   // Load training data
+  //   val spark = SparkSession.builder
+  //     .appName("Test-Titanic-Logistic-Regression")
+  //     .master("local[*]")
+  //     .getOrCreate()
 
-  }
-  test("Test Lr") {
+  //   val trainData = TitanicLogisticRegression.loadData(
+  //     spark = spark,
+  //     fileDir = "data/titanic/train.csv",
+  //     scheme = trainSchema
+  //   )
+  //   val testData = TitanicLogisticRegression.loadData(
+  //     spark = spark,
+  //     fileDir = "data/titanic/test.csv",
+  //     scheme = testSchema
+  //   )
+
+  //   val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
+  //     spark = spark,
+  //     trainData = trainData,
+  //     testData = testData
+  //   )
+
+  //   val lr = new LogisticRegression()
+  //   val paramGrid = new ParamGridBuilder()
+  //     .addGrid(lr.regParam, Array(0.1, 0.01))
+  //     .build()
+
+  //   val cv = new CrossValidator()
+  //     .setEstimator(lr)
+  //     .setEvaluator(
+  //       new BinaryClassificationEvaluator().setMetricName("areaUnderPR")
+  //     )
+  //     .setEstimatorParamMaps(paramGrid)
+  //     .setNumFolds(3)
+
+  //   val cvModel = cv.fit(parsedTrainData)
+  //   val bestModel = cvModel.bestModel
+  //   // Print the coefficients and intercept for logistic regression
+
+  //   val bestMetrics = cvModel.avgMetrics.reduce(max(_, _))
+  //   println("@@@@", bestMetrics)
+  //   assert(bestMetrics <= 1)
+  //   assert(bestMetrics >= 0)
+
+  //   val prediction = cvModel.transform(parsedTestData)
+  //   println("@@@@", prediction.count())
+  //   prediction.show()
+  //   spark.stop()
+  // }
+  // test("Test train") {
+  //   // Load training data
+  //   val spark = SparkSession.builder
+  //     .appName("Test-Titanic-Logistic-Regression")
+  //     .master("local[*]")
+  //     .getOrCreate()
+
+  //   val trainData = TitanicLogisticRegression.loadData(
+  //     spark = spark,
+  //     fileDir = "data/titanic/train.csv",
+  //     scheme = trainSchema
+  //   )
+  //   val testData = TitanicLogisticRegression.loadData(
+  //     spark = spark,
+  //     fileDir = "data/titanic/test.csv",
+  //     scheme = testSchema
+  //   )
+
+  //   val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
+  //     spark = spark,
+  //     trainData = trainData,
+  //     testData = testData
+  //   )
+
+  //   val prediction = TitanicLogisticRegression.trainAndPredict(
+  //     spark = spark,
+  //     trainData = parsedTrainData,
+  //     testData = parsedTestData
+  //   )
+  //   prediction.show()
+  //   assert(prediction.count() == 418)
+  //   spark.stop()
+  // }
+  test("Test write to csv") {
     // Load training data
     val spark = SparkSession.builder
       .appName("Test-Titanic-Logistic-Regression")
@@ -205,25 +287,14 @@ class TestLogisticRegression extends FunSuite {
       testData = testData
     )
 
-    val lr = new LogisticRegression()
-    val paramGrid = new ParamGridBuilder()
-      .addGrid(lr.regParam, Array(0.1, 0.01))
-      .build()
+    val prediction = TitanicLogisticRegression.trainAndPredict(
+      spark = spark,
+      trainData = parsedTrainData,
+      testData = parsedTestData
+    )
+    val tmp = TitanicLogisticRegression.write2CSV(spark=spark, prediction=prediction, testData=testData, outputDir = "submit.csv")
+    tmp.show()
 
-    val cv = new CrossValidator()
-      .setEstimator(lr)
-      .setEvaluator(new BinaryClassificationEvaluator)
-      .setEstimatorParamMaps(paramGrid)
-      .setNumFolds(3)
-
-    
-
-    val cvModel = cv.fit(parsedTrainData)
-
-    // Print the coefficients and intercept for logistic regression
-    println("@@@@", cvModel.getEvaluator)
-    
-    spark.stop()
   }
 
 }
