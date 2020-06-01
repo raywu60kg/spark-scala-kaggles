@@ -292,9 +292,15 @@ class TestLogisticRegression extends FunSuite {
       trainData = parsedTrainData,
       testData = parsedTestData
     )
-    val tmp = TitanicLogisticRegression.write2CSV(spark=spark, prediction=prediction, testData=testData, outputDir = "submit.csv")
-    tmp.show()
-
+    prediction.show()
+    // val tmp = TitanicLogisticRegression.write2CSV(
+    //   prediction = prediction,
+    //   testData = testData,
+    //   outputDir = "submit.csv"
+    // )
+    // tmp.show()
+    assert(1 == 1)
+    spark.stop()
   }
 
 }

@@ -170,13 +170,14 @@ object TitanicLogisticRegression {
     val lr = new LogisticRegression()
     val paramGrid = new ParamGridBuilder()
       .addGrid(lr.regParam, Array(0.1, 0.01))
-      // .addGrid(lr.elasticNetParam, Array(0.8, 0.7, 0.6, 0.5))
       .build()
+      // .addGrid(lr.elasticNetParam, Array(0.8, 0.7, 0.6, 0.5))
 
     val cv = new CrossValidator()
       .setEstimator(lr)
       .setEvaluator(
-        new BinaryClassificationEvaluator().setMetricName("areaUnderPR")
+        // new BinaryClassificationEvaluator().setMetricName("areaUnderPR")
+        new BinaryClassificationEvaluator()
       )
       .setEstimatorParamMaps(paramGrid)
       .setNumFolds(3)
@@ -186,15 +187,20 @@ object TitanicLogisticRegression {
   }
 
   def write2CSV(
-      spark: SparkSession,
       prediction: DataFrame,
       testData: DataFrame,
       outputDir: String
   ): DataFrame = {
-    val tmp = testData.withColumn(
-      "Survived",
-      prediction.select("prediction").rdd.flatMap(_).collect()
-    )
+    val df1 = testData
+      .withColumn("id", monotonically_increasing_id())
+      .select("PassengerId", "id")
+    df1.show()
+    val df2 = prediction
+      .withColumn("id", monotonically_increasing_id())
+      .select("id", "prediction")
+    df2.show()
+    val tmp = df1.join(df2, df1("id") === df2("id"), "outer").drop("id")
+    tmp.show()
     // newData.write
     //   .option("header", "True")
     //   .mode("overwrite")
