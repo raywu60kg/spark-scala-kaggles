@@ -52,217 +52,96 @@ class TestLogisticRegression extends FunSuite {
       StructField("Embarked", StringType, true)
     )
   )
-  // test("Test load data") {
-  //   val spark = SparkSession.builder
-  //     .appName("Test-Titanic-Logistic-Regression")
-  //     .master("local[*]")
-  //     .getOrCreate()
-  //   val trainData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/train.csv",
-  //     scheme = trainSchema
-  //   )
-  //   val testData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/test.csv",
-  //     scheme = testSchema
-  //   )
-  //   assert(trainData.count() == 891)
-  //   assert(testData.count() == 418)
-  //   spark.stop()
-  // }
-  // test("Test one hot encoder") {
-  //   val spark = SparkSession.builder
-  //     .appName("Test-Titanic-Logistic-Regression")
-  //     .master("local[*]")
-  //     .getOrCreate()
-  //   val trainSchema = StructType(
-  //     Array(
-  //       StructField("PassengerId", LongType, true),
-  //       StructField("Survived", LongType, true),
-  //       StructField("Pclass", StringType, true),
-  //       StructField("Name", StringType, true),
-  //       StructField("Sex", StringType, true),
-  //       StructField("Age", FloatType, true),
-  //       StructField("SibSP", LongType, true),
-  //       StructField("Parch", LongType, true),
-  //       StructField("Ticket", StringType, true),
-  //       StructField("Fare", FloatType, true),
-  //       StructField("Cabin", StringType, true),
-  //       StructField("Embarked", StringType, true)
-  //     )
-  //   )
-  //   val trainData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/train.csv",
-  //     scheme = trainSchema
-  //   )
+  test("Test load data") {
+    val spark = SparkSession.builder
+      .appName("Test-Titanic-Logistic-Regression")
+      .master("local[*]")
+      .getOrCreate()
+    val trainData = TitanicLogisticRegression.loadData(
+      spark = spark,
+      fileDir = "data/titanic/train.csv",
+      scheme = trainSchema
+    )
+    val testData = TitanicLogisticRegression.loadData(
+      spark = spark,
+      fileDir = "data/titanic/test.csv",
+      scheme = testSchema
+    )
+    assert(trainData.count() == 891)
+    assert(testData.count() == 418)
+    spark.stop()
+  }
 
-  //   // drop
-  //   var parsedData = trainData.drop("PassengerId", "Name", "Ticket", "Cabin")
-  //   // parsedData.show()
+  test("Test parseData") {
+    val spark = SparkSession.builder
+      .appName("Test-Titanic-Logistic-Regression")
+      .master("local[*]")
+      .getOrCreate()
+    val trainData = TitanicLogisticRegression.loadData(
+      spark = spark,
+      fileDir = "data/titanic/train.csv",
+      scheme = trainSchema
+    )
+    val testData = TitanicLogisticRegression.loadData(
+      spark = spark,
+      fileDir = "data/titanic/test.csv",
+      scheme = testSchema
+    )
 
-  //   // null
-  //   val averageAge =
-  //     parsedData.select(mean(parsedData("Age"))).first().getDouble(0)
-  //   // println("@@@@@@@@", averageAge)
-  //   parsedData = parsedData.na.fill(averageAge, Array("Age"))
-  //   // parsedData.show()
+    val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
+      trainData = trainData,
+      testData = testData
+    )
+    parsedTrainData.show()
+    parsedTestData.show()
 
-  //   // one-hot
-  //   val oneHotEncodeFeatures = Array("Pclass", "Sex", "Embarked")
+    val trainColumns = parsedTrainData.columns.toSeq
+    val testColumns = parsedTestData.columns.toSeq
+    assert(
+      trainColumns == Array(
+        "label",
+        "features"
+      ).toSeq
+    )
+    assert(
+      testColumns == Array(
+        "features"
+      ).toSeq
+    )
+    spark.stop()
+  }
 
-  //   val indexers = oneHotEncodeFeatures.map(c =>
-  //     new StringIndexer().setInputCol(c).setOutputCol(c + "_idx")
-  //   )
-  //   val encoders = oneHotEncodeFeatures.map(c =>
-  //     new OneHotEncoderEstimator()
-  //       .setInputCols(Array(c + "_idx"))
-  //       .setOutputCols(Array(c + "_vec"))
-  //   )
+  test("Test train") {
+    // Load training data
+    val spark = SparkSession.builder
+      .appName("Test-Titanic-Logistic-Regression")
+      .master("local[*]")
+      .getOrCreate()
 
-  //   // val encoders = new OneHotEncoderEstimator().setInputCols(oneHotEncodeFeatures).setOutputCols(oneHotEncodeFeatures.map(x => x+"Vec"))
-  //   val pipeline = new Pipeline().setStages(indexers ++ encoders)
+    val trainData = TitanicLogisticRegression.loadData(
+      spark = spark,
+      fileDir = "data/titanic/train.csv",
+      scheme = trainSchema
+    )
+    val testData = TitanicLogisticRegression.loadData(
+      spark = spark,
+      fileDir = "data/titanic/test.csv",
+      scheme = testSchema
+    )
 
-  //   var transformed = pipeline
-  //     .fit(parsedData)
-  //     .transform(parsedData)
+    val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
+      trainData = trainData,
+      testData = testData
+    )
 
-  //   for (feature <- oneHotEncodeFeatures) {
-  //     transformed = transformed.drop(feature)
-  //     transformed = transformed.drop(feature + "_idx")
-  //   }
-  //   // .drop(oneHotEncodeFeatures.map(c=>c) ++ oneHotEncodeFeatures.map(c => c + "_idx"))
-  //   transformed.show()
-  //   spark.stop()
-  //   assert(1 == 2)
-  // }
-
-  // test("Test parseData") {
-  //   val spark = SparkSession.builder
-  //     .appName("Test-Titanic-Logistic-Regression")
-  //     .master("local[*]")
-  //     .getOrCreate()
-  //   val trainData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/train.csv",
-  //     scheme = trainSchema
-  //   )
-  //   val testData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/test.csv",
-  //     scheme = testSchema
-  //   )
-
-  //   val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
-  //     spark = spark,
-  //     trainData = trainData,
-  //     testData = testData
-  //   )
-  //   parsedTrainData.show()
-  //   parsedTestData.show()
-
-  //   val trainColumns = parsedTrainData.columns.toSeq
-  //   val testColumns = parsedTestData.columns.toSeq
-  //   spark.stop()
-  //   println("@@@@@", trainColumns, testColumns)
-  //   assert(
-  //     trainColumns == Array(
-  //       "label",
-  //       "features"
-  //     ).toSeq
-  //   )
-  //   assert(
-  //     testColumns == Array(
-  //       "features"
-  //     ).toSeq
-  //   )
-  //   spark.stop()
-  // }
-  // test("Test Lr") {
-  //   // Load training data
-  //   val spark = SparkSession.builder
-  //     .appName("Test-Titanic-Logistic-Regression")
-  //     .master("local[*]")
-  //     .getOrCreate()
-
-  //   val trainData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/train.csv",
-  //     scheme = trainSchema
-  //   )
-  //   val testData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/test.csv",
-  //     scheme = testSchema
-  //   )
-
-  //   val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
-  //     spark = spark,
-  //     trainData = trainData,
-  //     testData = testData
-  //   )
-
-  //   val lr = new LogisticRegression()
-  //   val paramGrid = new ParamGridBuilder()
-  //     .addGrid(lr.regParam, Array(0.1, 0.01))
-  //     .build()
-
-  //   val cv = new CrossValidator()
-  //     .setEstimator(lr)
-  //     .setEvaluator(
-  //       new BinaryClassificationEvaluator().setMetricName("areaUnderPR")
-  //     )
-  //     .setEstimatorParamMaps(paramGrid)
-  //     .setNumFolds(3)
-
-  //   val cvModel = cv.fit(parsedTrainData)
-  //   val bestModel = cvModel.bestModel
-  //   // Print the coefficients and intercept for logistic regression
-
-  //   val bestMetrics = cvModel.avgMetrics.reduce(max(_, _))
-  //   println("@@@@", bestMetrics)
-  //   assert(bestMetrics <= 1)
-  //   assert(bestMetrics >= 0)
-
-  //   val prediction = cvModel.transform(parsedTestData)
-  //   println("@@@@", prediction.count())
-  //   prediction.show()
-  //   spark.stop()
-  // }
-  // test("Test train") {
-  //   // Load training data
-  //   val spark = SparkSession.builder
-  //     .appName("Test-Titanic-Logistic-Regression")
-  //     .master("local[*]")
-  //     .getOrCreate()
-
-  //   val trainData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/train.csv",
-  //     scheme = trainSchema
-  //   )
-  //   val testData = TitanicLogisticRegression.loadData(
-  //     spark = spark,
-  //     fileDir = "data/titanic/test.csv",
-  //     scheme = testSchema
-  //   )
-
-  //   val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
-  //     spark = spark,
-  //     trainData = trainData,
-  //     testData = testData
-  //   )
-
-  //   val prediction = TitanicLogisticRegression.trainAndPredict(
-  //     spark = spark,
-  //     trainData = parsedTrainData,
-  //     testData = parsedTestData
-  //   )
-  //   prediction.show()
-  //   assert(prediction.count() == 418)
-  //   spark.stop()
-  // }
+    val prediction = TitanicLogisticRegression.trainAndPredict(
+      trainData = parsedTrainData,
+      testData = parsedTestData
+    )
+    prediction.show()
+    assert(prediction.count() == 418)
+    spark.stop()
+  }
   test("Test write to csv") {
     // Load training data
     val spark = SparkSession.builder
@@ -282,24 +161,24 @@ class TestLogisticRegression extends FunSuite {
     )
 
     val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
-      spark = spark,
       trainData = trainData,
       testData = testData
     )
 
     val prediction = TitanicLogisticRegression.trainAndPredict(
-      spark = spark,
       trainData = parsedTrainData,
       testData = parsedTestData
     )
-    prediction.show()
-    // val tmp = TitanicLogisticRegression.write2CSV(
-    //   prediction = prediction,
-    //   testData = testData,
-    //   outputDir = "submit.csv"
-    // )
-    // tmp.show()
-    assert(1 == 1)
+
+    val res = TitanicLogisticRegression.write2CSV(
+      prediction = prediction,
+      testData = testData,
+      outputDir = "submit.csv",
+      isWrite = false
+    )
+    res.show()
+
+    assert(res.count() == 418)
     spark.stop()
   }
 

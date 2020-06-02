@@ -26,7 +26,7 @@ import org.apache.spark.ml.Model
 object TitanicLogisticRegression {
   private val trainSchema = StructType(
     Array(
-      StructField("PassengerId", LongType, true),
+      StructField("PassengerId", LongType, false),
       StructField("Survived", LongType, true),
       StructField("Pclass", StringType, true),
       StructField("Name", StringType, true),
@@ -43,7 +43,7 @@ object TitanicLogisticRegression {
 
   private val testSchema = StructType(
     Array(
-      StructField("PassengerId", LongType, true),
+      StructField("PassengerId", LongType, false),
       StructField("Pclass", StringType, true),
       StructField("Name", StringType, true),
       StructField("Sex", StringType, true),
@@ -64,12 +64,27 @@ object TitanicLogisticRegression {
     import spark.implicits._
     val trainDataDir = args(0)
     val testDataDir = args(1)
+    val outputDataDir = args(2)
     val trainData =
       loadData(spark = spark, fileDir = trainDataDir, scheme = trainSchema)
     val testData =
       loadData(spark = spark, fileDir = testDataDir, scheme = trainSchema)
-    // val parsedData = parseData(trainData)
-    // val model = train()
+    val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
+      trainData = trainData,
+      testData = testData
+    )
+
+    val prediction = TitanicLogisticRegression.trainAndPredict(
+      trainData = parsedTrainData,
+      testData = parsedTestData
+    )
+
+    val res = TitanicLogisticRegression.write2CSV(
+      prediction = prediction,
+      testData = testData,
+      outputDir = outputDataDir,
+      isWrite = true
+    )
 
   }
 
@@ -89,7 +104,6 @@ object TitanicLogisticRegression {
   }
 
   def parseData(
-      spark: SparkSession,
       trainData: DataFrame,
       testData: DataFrame
   ): (DataFrame, DataFrame) = {
@@ -133,6 +147,7 @@ object TitanicLogisticRegression {
     val assembler = new VectorAssembler()
       .setInputCols(featuresName)
       .setOutputCol("features")
+      .setHandleInvalid("keep")
 
     val pipeline =
       new Pipeline().setStages(indexers ++ encoders ++ Array(assembler))
@@ -163,7 +178,6 @@ object TitanicLogisticRegression {
   }
 
   def trainAndPredict(
-      spark: SparkSession,
       trainData: DataFrame,
       testData: DataFrame
   ): DataFrame = {
@@ -171,7 +185,7 @@ object TitanicLogisticRegression {
     val paramGrid = new ParamGridBuilder()
       .addGrid(lr.regParam, Array(0.1, 0.01))
       .build()
-      // .addGrid(lr.elasticNetParam, Array(0.8, 0.7, 0.6, 0.5))
+    // .addGrid(lr.elasticNetParam, Array(0.8, 0.7, 0.6, 0.5))
 
     val cv = new CrossValidator()
       .setEstimator(lr)
@@ -189,22 +203,28 @@ object TitanicLogisticRegression {
   def write2CSV(
       prediction: DataFrame,
       testData: DataFrame,
-      outputDir: String
+      outputDir: String,
+      isWrite: Boolean
   ): DataFrame = {
-    val df1 = testData
+    var df1 = testData
       .withColumn("id", monotonically_increasing_id())
       .select("PassengerId", "id")
-    df1.show()
+
+    df1.printSchema()
     val df2 = prediction
       .withColumn("id", monotonically_increasing_id())
       .select("id", "prediction")
-    df2.show()
-    val tmp = df1.join(df2, df1("id") === df2("id"), "outer").drop("id")
-    tmp.show()
-    // newData.write
-    //   .option("header", "True")
-    //   .mode("overwrite")
-    //   .save(outputFileName)
-    tmp
+    val res = df1
+      .join(df2, df1("id") === df2("id"), "outer")
+      .drop("id")
+      .orderBy(asc("PassengerId"))
+    if (isWrite) {
+
+      res.write
+        .option("header", "True")
+        .mode("overwrite")
+        .save(outputDir)
+    }
+    res
   }
 }

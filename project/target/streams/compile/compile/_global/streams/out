@@ -1,7 +1,0 @@
-[error] /home/wu/projects/spark-scala-kaggles/project/Dependencies.scala:4:60: ';' expected but double literal found.
-[error]   lazy val scalaTest = "org.scalatest" %% "scalatest" % 3.0.5
-[error]                                                            ^
-[error] /home/wu/projects/spark-scala-kaggles/project/Dependencies.scala:5:64: ';' expected but double literal found.
-[error]   lazy val sparkCore = "org.apache.spark" %% "spark-core" % 3.0.0
-[error]                                                                ^
-[error] two errors found
