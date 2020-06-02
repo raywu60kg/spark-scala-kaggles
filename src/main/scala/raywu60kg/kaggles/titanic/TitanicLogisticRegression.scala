@@ -68,7 +68,7 @@ object TitanicLogisticRegression {
     val trainData =
       loadData(spark = spark, fileDir = trainDataDir, scheme = trainSchema)
     val testData =
-      loadData(spark = spark, fileDir = testDataDir, scheme = trainSchema)
+      loadData(spark = spark, fileDir = testDataDir, scheme = testSchema)
     val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
       trainData = trainData,
       testData = testData
@@ -218,12 +218,15 @@ object TitanicLogisticRegression {
       .join(df2, df1("id") === df2("id"), "outer")
       .drop("id")
       .orderBy(asc("PassengerId"))
+    res.show()
     if (isWrite) {
 
-      res.write
+      res.coalesce(1)
+        .write
+        .format("csv")
         .option("header", "True")
         .mode("overwrite")
-        .save(outputDir)
+        .csv(outputDir)
     }
     res
   }
