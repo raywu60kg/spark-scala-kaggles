@@ -1,4 +1,4 @@
-me := "spark-scala-kaggles"
+name := "spark-scala-kaggles"
 
 version := "0.1"
 
