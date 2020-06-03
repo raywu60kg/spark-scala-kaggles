@@ -69,17 +69,17 @@ object TitanicLogisticRegression {
       loadData(spark = spark, fileDir = trainDataDir, scheme = trainSchema)
     val testData =
       loadData(spark = spark, fileDir = testDataDir, scheme = testSchema)
-    val (parsedTrainData, parsedTestData) = TitanicLogisticRegression.parseData(
+    val (parsedTrainData, parsedTestData) = parseData(
       trainData = trainData,
       testData = testData
     )
 
-    val prediction = TitanicLogisticRegression.trainAndPredict(
+    val prediction = trainAndPredict(
       trainData = parsedTrainData,
       testData = parsedTestData
     )
 
-    val res = TitanicLogisticRegression.write2CSV(
+    val res = write2CSV(
       prediction = prediction,
       testData = testData,
       outputDir = outputDataDir,
