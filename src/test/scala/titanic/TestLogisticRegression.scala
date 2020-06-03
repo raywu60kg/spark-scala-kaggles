@@ -173,7 +173,7 @@ class TestLogisticRegression extends FunSuite {
     val res = TitanicLogisticRegression.write2CSV(
       prediction = prediction,
       testData = testData,
-      outputDir = "submit.csv",
+      outputDir = "/tmp/submit",
       isWrite = false
     )
     res.show()

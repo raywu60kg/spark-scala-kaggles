@@ -158,21 +158,9 @@ object TitanicLogisticRegression {
       .fit(parsedTrainData)
       .transform(parsedTestData)
 
-    // cleanup features
-    // for (feature <- oneHotEncodeFeatures) {
-    //   transformedTrainData = transformedTrainData.drop(feature)
-    //   transformedTrainData = transformedTrainData.drop(feature + "_idx")
-
-    //   transformedTestData = transformedTestData.drop(feature)
-    //   transformedTestData = transformedTestData.drop(feature + "_idx")
-    // }
-
     transformedTrainData =
       transformedTrainData.select(col("Survived").as("label"), col("features"))
     transformedTestData = transformedTestData.select("features")
-
-    // rename label
-    // transformedTrainData.withColumn("Survived", col("label")).
 
     (transformedTrainData, transformedTestData)
   }
@@ -211,9 +199,10 @@ object TitanicLogisticRegression {
       .select("PassengerId", "id")
 
     df1.printSchema()
-    val df2 = prediction
+    var df2 = prediction
       .withColumn("id", monotonically_increasing_id())
-      .select("id", "prediction")
+      .select(col("id"), col("prediction").as("Survived"))
+    df2 = df2.withColumn("Survived", df2("Survived").cast(IntegerType))
     val res = df1
       .join(df2, df1("id") === df2("id"), "outer")
       .drop("id")
